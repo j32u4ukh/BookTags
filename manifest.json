@@ -1,0 +1,29 @@
+{
+  // extension 名稱
+  "name": "BookTags",
+
+  // extension 版本
+  "version": "0.1",
+
+  // 設定檔的格式版本，通常使用的都是最新的第二版。
+  "manifest_version": 2,
+
+  // 要替換的頁面(每一個 extention 只能替換一種頁面)
+  "chrome_url_overrides": {
+    /*newtab,history,bookmarks*/
+    "newtab": "myNewTab.html"
+  },
+
+  "permissions": [
+    "bookmarks",
+    "storage"
+  ]
+
+  ///* Using an options page */
+  //"options_ui": {
+  //  "page": "myOptionsPage.html",
+
+  //  /* Use Chrome stylesheet */
+  //  "chrome_style": true
+  //}
+}
