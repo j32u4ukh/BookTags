@@ -10,20 +10,23 @@
 
   // 要替換的頁面(每一個 extention 只能替換一種頁面)
   "chrome_url_overrides": {
-    /*newtab,history,bookmarks*/
-    "newtab": "myNewTab.html"
+    /* newtab, history, bookmarks */
+    //"newtab": "myNewTab.html"
+    "bookmarks": "index.html"
   },
 
   "permissions": [
     "bookmarks",
     "storage"
-  ]
+  ],
+
+  "content_security_policy": "script-src 'self' https://ajax.googleapis.com; object-src 'self'",
 
   ///* Using an options page */
-  //"options_ui": {
-  //  "page": "myOptionsPage.html",
+  "options_ui": {
+    "page": "myOptionsPage.html",
 
-  //  /* Use Chrome stylesheet */
-  //  "chrome_style": true
-  //}
+    /* Use Chrome stylesheet */
+    "chrome_style": true
+  }
 }

@@ -2,7 +2,10 @@
 <html>
 <head>
     <title>Book Tags</title>
-    <script src="myNewTab_1.js"></script>
+    <script src="main.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script type="module" src="bookmark.js"></script>
+    <script type="module" src="utils.js"></script>
     <style>
         body {
             background-color: #eee;
@@ -40,7 +43,8 @@
     </style>
 </head>
 <body>
-    <h2>My New-Tab: Chrome Developer Bookmarks</h2>
-    <ul id="list"></ul>
+    <h2>Chrome Developer Bookmarks</h2>
+    <div>Search Bookmarks: <input id="search"></div>
+    <div id="bookmarks"></div>
 </body>
 </html>
