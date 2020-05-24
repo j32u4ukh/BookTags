@@ -1,7 +1,77 @@
 export function print(content, message_type = "Log"){
 	console.log(String.format("[{0}] {1}", message_type, content));
-    // console.log(String.format("[" + message_type + "] " + content));
+}
 
+export function arrayToString(array){
+    let i, len = array.length - 1, result = "[";
+
+    for(i = 0; i < len; i++){
+        result += array[i];
+        result += ", ";
+	}
+
+    result += array[len];
+    result += "]";
+
+    return result;
+}
+
+// 印出陣列
+export function printArray(array, name = "array"){
+	let array_string = arrayToString(array);
+    print(array_string, name);
+}
+
+// CRUD: C, U
+export function setTag(tag, id){
+    chrome.storage.sync.get(tag, function(dict) {
+        let array = dict[tag];
+
+        // 若為空則新建數據
+        if(array == null){
+            chrome.storage.sync.set({[tag]: [id]}, function() {
+		        print(String.format("Create tag: {0}, id: [{1}]", tag, id));
+	        });
+		}
+
+        // 若已有該 tag
+        else{
+            array.push(id);
+            chrome.storage.sync.set({[tag]: array}, function() {
+		        print(String.format("Update tag: {0}, id: [{1}]", tag, arrayToString(array)));
+	        });
+		}
+    });
+}
+
+// CRUD: R
+export function getTag(key){
+    chrome.storage.sync.get(key, function(dict) {
+        // 讀取全部
+        if(key == null){
+            Object.keys(dict).forEach(function(sub_key){
+                bm.print(sub_key, key);
+            });
+
+            return null;
+	    }else{
+
+            return dict[key];
+	    }    
+    });
+}
+
+// CRUD: D
+export function deleteTag(key){
+    chrome.storage.sync.remove(key, function() {
+		// pass
+	});
+
+    chrome.storage.sync.getBytesInUse(key, function(bytes_in_use){
+		if(bytes_in_use == 0){
+              bm.print(String.format("Key {0} has been removed successful.", key), "remove");
+		}
+	});
 }
 
 /*  字串格式化

@@ -1,11 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+
     <title>Book Tags</title>
+
+    <!--宣告使用到的腳本-->
     <script src="main.js"></script>
+
+    <!--TODO: 檢視我的 BookTags 是否需要這部分-->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+    <!--宣告為 module，以利後續匯入-->
     <script type="module" src="bookmark.js"></script>
-    <script type="module" src="utils.js"></script>
+    <!--<script type="module" src="utils.js"></script>-->
+
     <style>
         body {
             background-color: #eee;
@@ -40,11 +49,24 @@
             a:hover {
                 text-decoration: underline;
             }
+
+        input {
+            background-color: black;
+            color: white;
+        }
+
+        .text {
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
     <h2>Chrome Developer Bookmarks</h2>
-    <div>Search Bookmarks: <input id="search"></div>
+    <div style="text-align:center">
+        <div class="text">Command-line:
+            <input id="command" class="text" size="100">
+        </div>
+    </div>
     <div id="bookmarks"></div>
 </body>
 </html>

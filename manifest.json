@@ -8,25 +8,45 @@
   // 設定檔的格式版本，通常使用的都是最新的第二版。
   "manifest_version": 2,
 
+  "browser_action": {
+    "default_icon": "icon.png"
+    //"default_icon": { // optional
+    //  "16": "images/icon16.png", // optional
+    //  "24": "images/icon24.png", // optional
+    //  "32": "images/icon32.png" // optional
+    //},
+    //"default_title": "Google Mail", // optional; shown in tooltip
+    //"default_popup": "popup.html" // optional
+  },
+
   // 要替換的頁面(每一個 extention 只能替換一種頁面)
   "chrome_url_overrides": {
     /* newtab, history, bookmarks */
-    //"newtab": "myNewTab.html"
-    "bookmarks": "index.html"
   },
 
+  // 權限宣告
   "permissions": [
     "bookmarks",
-    "storage"
+    "storage",
+    "activeTab",
+    "contextMenus"
   ],
 
-  "content_security_policy": "script-src 'self' https://ajax.googleapis.com; object-src 'self'",
+  // 背景程式(無介面)
+  "background": {
 
-  ///* Using an options page */
-  "options_ui": {
-    "page": "myOptionsPage.html",
+    // 腳本路徑
+    "scripts": [
+      "background.js"
+    ],
 
-    /* Use Chrome stylesheet */
-    "chrome_style": true
-  }
+    // 是否持續運作？
+    "persistent": true
+  },
+
+  /* 內容的安全策略宣告
+  參考網站：https://ithelp.ithome.com.tw/articles/10188899
+  TODO: 檢視我的 BookTags 是否需要這部分
+  */
+  "content_security_policy": "script-src 'self' https://ajax.googleapis.com; object-src 'self'"
 }
