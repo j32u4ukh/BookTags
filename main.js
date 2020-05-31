@@ -1,4 +1,4 @@
-//////////// chrome extensions import ////////////
+///////////////////////////////////// chrome extensions import /////////////////////////////////////
 // https://medium.com/@otiai10/how-to-use-es6-import-with-chrome-extension-bd5217b9c978
 let bm, utils;
 (async () => {
@@ -7,74 +7,113 @@ let bm, utils;
 	// 目前似乎因為載入順序等因素，第二筆無法再呼叫前完成載入
 	// utils = await import(chrome.extension.getURL('utils.js'));
 })();
-//////////////////////////////////////////////////
-//////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// TODO: [Depreciation] 改為使用多組函式，以 node 為參數，來協助存取
 function Node(id, name, url, parent_id){
 	this.id = id;
 	this.name = name
 	this.url = url;
+
+	// parent_id: 協助建立資料夾結構
 	this.parent_id = parent_id;
+
+	// TODO: children 父節點指向子節點
+
+	this.isFolder = function(){
+		if(this.url){
+			return true;
+		}else{
+			return false;
+		}
+	};
+
+	this.isLink = function(){
+		if(this.url){
+			return false;
+		}else{			
+			return true;
+		}
+	};
+
+	// 以字串形式表達這個 Node
 	this.toString = function(){
 		return String.format("({0} : {2}) {1}", this.id, this.name, this.parent_id);
 	};
 }
 
+// ROOT: 用於儲存最上層的樹
+let ROOT;
+
+// 之前所使用的變數
 let nodes = [];
 let tags = {}
 let node_dict = {};
 
+/*
+TODO: 利用網址列作為 command line 來輸入測試指令
+let get = location.search;
+
+// 之前利用 input filed 所做的簡單版本
+// 處理 command line 給的指令
+$("#command").change(function() {
+	// 取得 command line 的內容
+	command = $("#command").val();
+	bm.print(command, "$");
+	$("#command").val("");
+
+	// TODO: 根據長度不同、關鍵字不同，導向不同功能
+	// 將取得的內容轉為數字
+	let idx = parseInt(command, 10);
+
+	// 確保 node_dict 當中含有 idx 這個 key
+	if(idx in node_dict){
+		let node = node_dict[idx];
+
+		// 判斷物件類別
+		bm.print(node instanceof Node, "OO");
+		bm.print(node.toString(), "node");
+		if(node.url){			
+			bm.print(node.url, "node");
+		}
+	}
+});
+*/
+
 document.addEventListener("DOMContentLoaded", function() {
-	// tag element in html
+	// 建立右鍵事件
+	bm.createMenus();
+
+	// 取得 index.html 當中的 bookmarks 元素
 	let bookmarks = document.getElementById("bookmarks");
 
-	/*let get = location.search;*/
-	bm.print("中文測試", "get");
-
-	
-	createMenus();
-
-	// 處理 command line 給的指令
-	$("#command").change(function() {
-		// 取得 command line 的內容
-		command = $("#command").val();
-		bm.print(command, "$");
-		$("#command").val("");
-
-		// TODO: 根據長度不同、關鍵字不同，導向不同功能
-		// 將取得的內容轉為數字
-		let idx = parseInt(command, 10);
-
-		// 確保 node_dict 當中含有 idx 這個 key
-		if(idx in node_dict){
-			let node = node_dict[idx];
-
-			// 判斷物件類別
-			bm.print(node instanceof Node, "OO");
-			bm.print(node.toString(), "node");
-			if(node.url){			
-				bm.print(node.url, "node");
-			}
-		}
-	});
-
-
+	// 取得儲存書籤的物件(形式為一種樹):  bookmarks.BookmarkTreeNode 
+	// 參考網站: https://developer.chrome.com/extensions/bookmarks
 	chrome.bookmarks.getTree(function(bookmark_tree_array) {
 
-		// 取得第 0 個 Tree
+		// 取得 BookmarkTreeNode
 		var bookmark_tree = bookmark_tree_array[0];
 
-		// 取得 Tree 下的節點: 書籤列 & 其他書籤
+		// TODO: 預設呈現 書籤列(1) 的書籤(包含 資料夾 與 超連結 )
+		////////////////////////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		// 取得 Tree 下的節點: 書籤列(1) & 其他書籤(2)
 		bookmark_tree.children.forEach(function(node) {
-			console.log(String.format("{0}\t{1}", node.id, node.title));
+			// console.log(String.format("{0}\t{1}", node.id, node.title));
 
 			// 非空節點才加入
 			if(node.children.length > 0){
 
 				// 添加到 nodes 當中
+				bm.print(String.format("node id: {0}, parent_id: {1}", node.id, node.parentId));
 				nodes.push(node);
 			}
 		});
 
+		bm.buildBookmarks(23, bookmarks, bookmark_tree);
+
+		/*
 		// 遍歷全部書籤
 		let i = 0, len = nodes.length;
 		while(i < len){
@@ -85,6 +124,7 @@ document.addEventListener("DOMContentLoaded", function() {
 				if(leaf_or_node.url){
 					// console.log(num + ": " + leaf_or_node.title + "(" + leaf_or_node.url + ")");
 
+					// 產生假的 tags 資訊
 					let key = leaf_or_node.title.length % 10;
 
 					if(!(key in tags)){
@@ -93,6 +133,7 @@ document.addEventListener("DOMContentLoaded", function() {
 					tags[key].push(leaf_or_node);
 
 				}
+
 				// is folder
 				else{
 					nodes.push(leaf_or_node);
@@ -151,45 +192,13 @@ document.addEventListener("DOMContentLoaded", function() {
 				ul.appendChild(li);
 			}
 		});
-		bookmarks.appendChild(ul);
+		bookmarks.appendChild(ul);*/
 	});
 });
 
-function addNode(parent_element, node){
-
-}
-
-function addListItem(parent_element, leaf) {
-	// 生成 li tag
-	let li = document.createElement("li");
-
-	// 生成 a tag
-	let a = document.createElement("a");
-	let url = leaf.url
-	a.href = url;
-	a.innerText = leaf.title;
-
-	// 將 a tag 添加到 li tag 之下
-	li.appendChild(a);
-
-	const host = "developer.chrome.com";
-
-	if(url.indexOf(host) != -1) {
-		let border_right = "5px solid #666";
-		let box_shadow = "0px 0px 2px #333";
-		let background_color = "#ccc";
-		li.style.borderRight = border_right;
-		li.style.boxShadow = box_shadow;
-		li.style.backgroundColor = background_color;
-	}
-
-	// 將 li tag 添加到 listElement tag 之下
-	parent_element.appendChild(li);
-}
-
-//////////////////////////////////////////////////
-//////////////////////////////////////////////////
-// ========== storage ==========
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// ========== TEST ==========
 function storageTest(){
 	chrome.storage.sync.getBytesInUse(null, function(bytes_in_use){
 		bm.print(bytes_in_use, "bytes_in_use 0");
@@ -251,119 +260,4 @@ function storageTest2(){
 	chrome.storage.sync.getBytesInUse(null, function(bytes_in_use){
 		bm.print(bytes_in_use, "bytes_in_use");
 	});
-}
-
-
-//////////////////////////////////////////////////
-//////////////////////////////////////////////////
-// ========== 右鍵功能 ==========
-function genericOnClick(info, tab) {
-    //根據你點選右鍵的狀況不同，可以得到一些跟內容有關的資訊
-    //例如 頁面網址，選取的文字，圖片來源，連結的位址
-    console.log(
-        "ID是：" + info.menuItemId + "\n" +
-        "現在的網址是：" + info.pageUrl + "\n" +
-        "選取的文字是：" + (info.selectionText ? info.selectionText : "") + "\n" +
-        "現在hover元素的圖片來源：" + (info.srcUrl ? info.srcUrl : "") + "\n" +
-        "現在hover的連結：" + (info.linkUrl ? info.linkUrl : "") + "\n" +
-        "現在hover的frame是：" + (info.frameUrl ? info.frameUrl : "") + "\n"
-    );
-}
-
-function checkableClick(info, tab) {
-    //checkbox 以及 radio 這兩種類型的項目，除了上面的程式碼提到的資訊外，還會用布林值來告訴你使用者點選前，及點選後的狀態。
-    console.log(
-        "ID是：" + info.menuItemId + "\n" +
-        "現在的網址是：" + info.pageUrl + "\n" +
-        "選取的文字是：" + (info.selectionText ? info.selectionText : "") + "\n" +
-        "現在hover元素的圖片來源：" + (info.srcUrl ? info.srcUrl : "") + "\n" +
-        "現在hover的連結：" + (info.linkUrl ? info.linkUrl : "") + "\n" +
-        "現在hover的frame是：" + (info.frameUrl ? info.frameUrl : "") + "\n" +
-        "現在的狀態是：" + info.checked + "\n" +
-        "之前的狀態是：" + info.wasChecked
-    );
-}
-
-function createMenus() {
-    console.log("[background] createMenus");
-
-    let parent = chrome.contextMenus.create({
-        "title": "你選擇了%s",
-        "contexts": ['all'],    
-        "onclick": genericOnClick
-    });
-
-    let normal = chrome.contextMenus.create({
-        "title": "通常項目",
-        "type": "normal",
-        "contexts": ['all'],
-        "parentId": parent,
-        "onclick": genericOnClick
-    });
-
-    let checkbox = chrome.contextMenus.create({
-        "title": "checkbox",
-        "type": "checkbox",
-        "contexts": ['all'],
-        "parentId": parent,
-        "onclick": checkableClick
-    });
-
-    //被separator分隔的radio項目會自動形成一個只能單選的group
-    let line1 = chrome.contextMenus.create({
-        "title": "Child 2",
-        "type": "separator",
-        "contexts": ['all'],
-        "parentId": parent
-    });
-
-    let radio1A = chrome.contextMenus.create({
-        "title": "group-1 的A選項(單選)",
-        "type": "radio",
-        "contexts": ['all'],
-        "parentId": parent,
-        "onclick": checkableClick
-    });
-    let radio1B = chrome.contextMenus.create({
-        "title": "group-1 的B選項(單選)",
-        "type": "radio",
-        "contexts": ['all'],
-        "parentId": parent,
-        "onclick": checkableClick
-    });
-    //被separator分隔的radio項目會自動形成一個只能單選的group
-    let line2 = chrome.contextMenus.create({
-        "title": "Child 2",
-        "type": "separator",
-        "contexts": ['all'],
-        "parentId": parent
-    });
-
-    let radio2A = chrome.contextMenus.create({
-        "title": "group-2 的A選項(單選)",
-        "type": "radio",
-        "contexts": ['all'],
-        "parentId": parent,
-        "onclick": checkableClick
-    });
-
-    let radio2B = chrome.contextMenus.create({
-        "title": "group-2 的B選項(單選)",
-        "type": "radio",
-        "contexts": ['all'],
-        "parentId": parent,
-        "onclick": checkableClick
-    });
-
-    // 使用chrome.contextMenus.create的方法回傳值是項目的id
-    
-    console.log(parent);
-    console.log(normal);
-    console.log(checkbox);
-    console.log(line1);
-    console.log(line2);
-    console.log(radio1A);
-    console.log(radio1B);
-    console.log(radio2A);
-    console.log(radio2B);
 }
