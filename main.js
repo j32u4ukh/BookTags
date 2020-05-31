@@ -41,44 +41,21 @@ function Node(id, name, url, parent_id){
 		return String.format("({0} : {2}) {1}", this.id, this.name, this.parent_id);
 	};
 }
-
-// ROOT: 用於儲存最上層的樹
-let ROOT;
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+let branch = "root";
 
 // 之前所使用的變數
 let nodes = [];
 let tags = {}
 let node_dict = {};
 
-/*
-TODO: 利用網址列作為 command line 來輸入測試指令
+// 利用網址列作為 command line 來輸入測試指令
 let get = location.search;
-
-// 之前利用 input filed 所做的簡單版本
-// 處理 command line 給的指令
-$("#command").change(function() {
-	// 取得 command line 的內容
-	command = $("#command").val();
-	bm.print(command, "$");
-	$("#command").val("");
-
-	// TODO: 根據長度不同、關鍵字不同，導向不同功能
-	// 將取得的內容轉為數字
-	let idx = parseInt(command, 10);
-
-	// 確保 node_dict 當中含有 idx 這個 key
-	if(idx in node_dict){
-		let node = node_dict[idx];
-
-		// 判斷物件類別
-		bm.print(node instanceof Node, "OO");
-		bm.print(node.toString(), "node");
-		if(node.url){			
-			bm.print(node.url, "node");
-		}
-	}
-});
-*/
+/*if(get != null){
+	//location.reload(true);
+	console.log(get);
+}*/
 
 document.addEventListener("DOMContentLoaded", function() {
 	// 建立右鍵事件
@@ -87,12 +64,65 @@ document.addEventListener("DOMContentLoaded", function() {
 	// 取得 index.html 當中的 bookmarks 元素
 	let bookmarks = document.getElementById("bookmarks");
 
+	// 取得 BookmarkTreeNode
+	let bookmark_tree;
+
+	// 取得 BookmarkTreeNode
+	let e_branch = document.getElementById("branch");;
+
+	// 處理 command line 給的指令
+	$("#command").change(function() {
+		// 取得 command line 的內容
+		command = $("#command").val();
+		bm.print(command, "$");
+
+		// 清空 command line
+		e_branch.innerText = String.format("({0})", branch);
+		$("#command").val("");
+
+		// 根據長度不同、關鍵字不同，導向不同功能
+		let command_array = command.split(" -");
+		bm.print(String.format("length: {0}", command_array.length), "command_array");
+
+		switch(command_array.length){			
+			case 1:
+				// TODO: 輸入 tag 名稱，篩選出含有該 tag 的書籤
+				// 將取得的內容轉為數字
+				let idx = parseInt(command, 10);
+				bm.buildBookmarks(idx, bookmarks, bookmark_tree);
+				break;
+			case 2:
+				bm.print(String.format("command_array[0]: {0}", command_array[0]), "command_array");
+				if(command_array[0] == "sudo"){
+					let array1 = command_array[1].split(" ");
+					let kind = array1[0];
+					let content = array1[1];
+
+					bm.print(String.format("kind: {0}", kind), "command_array");
+					bm.print(String.format("content: {0}", content), "command_array");
+
+					switch(kind){
+						case "checkout":
+							branch = content;
+							// 切換分支
+							e_branch.innerText = String.format("({0})", branch);
+							$("#command").val("");
+							break;
+						default:
+							break;
+					}
+				}
+			default:
+				break;
+		}		
+	});
+
 	// 取得儲存書籤的物件(形式為一種樹):  bookmarks.BookmarkTreeNode 
 	// 參考網站: https://developer.chrome.com/extensions/bookmarks
 	chrome.bookmarks.getTree(function(bookmark_tree_array) {
 
 		// 取得 BookmarkTreeNode
-		var bookmark_tree = bookmark_tree_array[0];
+		bookmark_tree = bookmark_tree_array[0];
 
 		// TODO: 預設呈現 書籤列(1) 的書籤(包含 資料夾 與 超連結 )
 		////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +141,7 @@ document.addEventListener("DOMContentLoaded", function() {
 			}
 		});
 
-		bm.buildBookmarks(23, bookmarks, bookmark_tree);
+		bm.buildBookmarks(1, bookmarks, bookmark_tree);
 
 		/*
 		// 遍歷全部書籤

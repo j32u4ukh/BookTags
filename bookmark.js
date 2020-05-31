@@ -58,26 +58,25 @@ export function addListItem(parent_element, leaf) {
 }
 
 export function buildBookmarks(root_id, parent_element, tree){
-    let nodes = [], node, root_node;
+    // 清空 parent_element 所含子元素
+    parent_element.innerText = "";
+
+    let nodes = [], node, root_node = null;
     nodes.push(tree);
     let i = 0, len = nodes.length;
     
     while(i < len){
         node = nodes[i];
 
-        /*node.children.forEach(function(nod){
-            if(nod.id == root_id){
-                root_node = node;
-                break;
-			}else{
-                nodes.push(nod);
-			}
-        });*/
-
-        // TODO: 處理 children 個數不同，會有 some 的適用問題
+        // 若 children 為空，會有 some 的適用問題
         if(node.children == null){
-            print(String.format("[bookmark] buildBookmarks node {0} without children.", node.id));
-		}else{
+            // print(String.format("[bookmark] buildBookmarks node {0} without children.", node.id));
+		}
+
+        /* 若 children 個數大於 0，使用 some 可在找到目標 node 的時候跳出迴圈
+        參考：https://jser.me/2014/04/02/%E5%A6%82%E4%BD%95%E5%9C%A8Array.forEach%E7%9A%84%E5%BE%AA%E7%8E%AF%E9%87%8Cbreak.html
+        */
+        else{
             node.children.some(function(nod, index, arry){
                 if(nod.id == root_id){
                     root_node = nod;
@@ -92,55 +91,63 @@ export function buildBookmarks(root_id, parent_element, tree){
         len = nodes.length;
     }
 
-    // TODO: 清空 parent_element 所含子元素
+    // 若有找到 id 為 root_id 的 root_node
+    if(root_node != null){
+        root_node.children.forEach(function(node){
+            let text_class = document.createAttribute("class");
+            text_class.value = "text";
 
-    root_node.children.forEach(function(node){
+            // 若為資料夾
+            if(isFolder(node)){
+                // TODO: 資料夾可根據 id 開啟下一層的 Tree
+                let container = document.createElement("div");
+                container.id = node.id;
+                let icon = document.createElement("div");
+                let title = document.createElement("span");
+                let expand = document.createElement("div");
+            
 
-        // 若為資料夾
-        if(isFolder(node)){
-            // TODO: 資料夾可根據 id 開啟下一層的 Tree
-            let container = document.createElement("div");
-            container.id = node.id;
-            let icon = document.createElement("div");
-            let title = document.createElement("span");
-            let expand = document.createElement("div");
+                // TODO: 按下 expand 後應在該欄下方展開該欄所包含的 tag
 
-            // TODO: 按下 expand 後應在該欄下方展開該欄所包含的 tag
+                // TODO: 對個別元素進行定義
+                title.innerText = String.format("({0}) {1}", node.id, node.title);
+                title.setAttributeNode(text_class);
 
-            // TODO: 對個別元素進行定義
-            title.innerText = node.title;
+                // 將元素們載入容器中
+                container.appendChild(icon);
+                container.appendChild(title);
+                container.appendChild(expand);
 
-            // 將元素們載入容器中
-            container.appendChild(icon);
-            container.appendChild(title);
-            container.appendChild(expand);
-
-            parent_element.appendChild(container);
-		}
+                parent_element.appendChild(container);
+            }
         
-        // 若為超連結
-        else{
-            let a = document.createElement("a");
-            let container = document.createElement("div");
-            let icon = document.createElement("div");
-            let title = document.createElement("span");
-            let expand = document.createElement("div");
+            // 若為超連結
+            else{
+                let a = document.createElement("a");
+                let container = document.createElement("div");
+                let icon = document.createElement("div");
+                let title = document.createElement("span");
+                let expand = document.createElement("div");
 
-            // TODO: 按下 expand 後應在該欄下方展開該欄所包含的 tag
+                // TODO: 按下 expand 後應在該欄下方展開該欄所包含的 tag
 
-            // TODO: 對個別元素進行定義
-            title.innerText = node.title;
-            a.href = node.url;
+                // TODO: 對個別元素進行定義
+                title.innerText = String.format("({0}) {1}", node.id, node.title);
+                title.setAttributeNode(text_class);
+                a.href = node.url;
 
-            // 將元素們載入容器中
-            container.appendChild(icon);
-            container.appendChild(title);
-            container.appendChild(expand);
-            a.appendChild(container);
+                // 將元素們載入容器中
+                container.appendChild(icon);
+                container.appendChild(title);
+                container.appendChild(expand);
+                a.appendChild(container);
 
-            parent_element.appendChild(a);
-		}
-    });
+                parent_element.appendChild(a);
+            }
+        });
+	}else{
+        print(String.format("Without node {0}.", root_id), "Error");
+	}
 }
 
 // TODO: sort nodes
