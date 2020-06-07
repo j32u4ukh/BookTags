@@ -54,11 +54,19 @@ document.addEventListener("DOMContentLoaded", function() {
 
 		switch(cmd.length){
 			// 保留字 或 tag_name
-			case 1:
-				// TODO: 輸入 tag 名稱，篩選出含有該 tag 的書籤
+			case 1:				
 				// 將取得的內容轉為數字
-				let idx = parseInt(cmd, 10);
-				bm.buildBookmarks(idx, bookmarks, bookmark_tree);
+				//let idx = parseInt(cmd, 10);
+				//bm.buildBookmarks(idx, bookmarks, bookmark_tree);
+
+				// TODO: 輸入 tag 名稱，篩選出含有該 tag 的書籤
+				// tag_name 不能是保留字(keyword)
+				if(isKeyWord(cmd[0])){
+					bm.print(String.format("This is keyword: {0}", cmd[0]));
+
+				}else{
+					showTag(cmd[0], bookmarks, bookmark_tree);
+				}
 				break;
 			// 2 參數 Tag 相關指令(tag_name, func_name)
 			case 2:
@@ -134,25 +142,11 @@ document.addEventListener("DOMContentLoaded", function() {
 		// 取得 BookmarkTreeNode
 		bookmark_tree = bookmark_tree_array[0];
 
-		// TODO: 預設呈現 書籤列(1) 的書籤(包含 資料夾 與 超連結 )
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		// 取得 Tree 下的節點: 書籤列(1) & 其他書籤(2)
-		bookmark_tree.children.forEach(function(node) {
-			// console.log(String.format("{0}\t{1}", node.id, node.title));
-
-			// 非空節點才加入
-			if(node.children.length > 0){
-
-				// 添加到 nodes 當中
-				bm.print(String.format("node id: {0}, parent_id: {1}", node.id, node.parentId));
-				nodes.push(node);
-			}
-		});
-
+		// 預設呈現 書籤列(1) 的書籤(包含 資料夾 與 超連結 )
 		bm.buildBookmarks(1, bookmarks, bookmark_tree);
+		////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		
 		/*
 		// 遍歷全部書籤
 		let i = 0, len = nodes.length;
@@ -239,6 +233,7 @@ document.addEventListener("DOMContentLoaded", function() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // ========== utils ==========
+// 判斷是否為保留字
 function isKeyWord(target){
 	let key_words = ["set", "s", "get", "g", "delete", "d"];
 	let is_key_word = false;
@@ -252,6 +247,7 @@ function isKeyWord(target){
 	return is_key_word;
 }
 
+// 返回 element 在 array 當中的索引值，若不存在則返回 -1
 function indexOfArray(array, element){
 	let idx = -1;
 
@@ -262,6 +258,23 @@ function indexOfArray(array, element){
 	});
 
 	return idx;
+}
+
+// 將陣列去除重複值，並由小排到大
+function conciseIntArray(array){
+	let concise = [];
+
+	array.forEach(function(item){
+		if(indexOfArray(concise, item) == -1){
+			concise.push(item);
+		}
+	});
+
+	concise.sort(function (a, b) {
+		return a - b;
+	});
+
+	return concise;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -282,6 +295,8 @@ function setTag(tag, id){
         // 若已有該 tag
         else{
             array.push(id);
+			array = conciseIntArray(array);
+
             chrome.storage.sync.set({[tag]: array}, function() {
 		        bm.print(String.format("Update tag: {0}, id: {1}", tag, bm.arrayToString(array)));
 	        });
@@ -296,6 +311,7 @@ function setTags(tag, ids){
 
         // 若為空則新建數據
         if(array == null){
+			ids = conciseIntArray(ids);
             chrome.storage.sync.set({[tag]: ids}, function() {
 		        bm.print(String.format("Create tag: {0}, ids: [{1}]", tag, ids));
 	        });
@@ -304,9 +320,10 @@ function setTags(tag, ids){
         // 若已有該 tag
         else{
             ids.forEach(function(id){
-                array.push(id);
+                array.push(id.trim());
             });
-            
+            array = conciseIntArray(array);
+
             chrome.storage.sync.set({[tag]: array}, function() {
 		        bm.print(String.format("Update tag: {0}, id: {1}", tag, bm.arrayToString(array)));
 	        });
@@ -333,6 +350,29 @@ function getTag(tag){
     });
 }
 
+// CRUD: R
+function showTag(tag, bookmarks, bookmark_tree){
+	// TODO: 將 tag 下的所有 node 取出，以 id 來排序
+    chrome.storage.sync.get(tag, function(dict) {
+        // 若 dict 有 tag 這個關鍵字
+		if(dict.hasOwnProperty(tag)){
+			let ids = dict[tag];
+
+			bm.buildTagBookmarks(ids, bookmarks, bookmark_tree);
+
+			/*bookmark_tree.children.forEach(function(node) {
+				// 非空節點才加入
+				if(node.children.length > 0){
+
+					// 添加到 nodes 當中
+					bm.print(String.format("node id: {0}, parent_id: {1}", node.id, node.parentId));
+					nodes.push(node);
+				}
+			});*/
+		}    
+    });
+}
+
 // CRUD: D
 function deleteTag(tag){	
     chrome.storage.sync.remove(tag, function() {
@@ -354,7 +394,7 @@ function deleteTagElement(tag, id){
 			let array = dict[tag];
 
 			array.forEach(function(arr){
-				bm.print(String.format("arr: {0}, id: {1}, arr == id: {2}", arr, id, arr === id));
+				bm.print(String.format("arr: {0}, id: {1}, arr == id: {2}", arr, id, arr == id));
 			});
 
 			// 取得該 id 在陣列中的索引值
@@ -403,7 +443,6 @@ function deleteTagElements(tag, ids){
 		}   
     });
 }
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

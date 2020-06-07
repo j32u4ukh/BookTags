@@ -22,6 +22,50 @@ export function printArray(array, name = "array"){
     print(array_string, name);
 }
 
+// 判斷是否為保留字
+export function isKeyWord(target){
+	let key_words = ["set", "s", "get", "g", "delete", "d"];
+	let is_key_word = false;
+
+	key_words.some(function(key_word, index, array){
+		if(target == key_word){
+			is_key_word = true;
+		}
+	});
+
+	return is_key_word;
+}
+
+// 返回 element 在 array 當中的索引值，若不存在則返回 -1
+export function indexOfArray(array, element){
+	let idx = -1;
+
+	array.some(function(arr, index, list){
+		if(arr == element){
+			idx = index;
+		}
+	});
+
+	return idx;
+}
+
+// 將陣列去除重複值，並由小排到大
+export function conciseIntArray(array){
+	let concise = [];
+
+	array.forEach(function(item){
+		if(indexOfArray(concise, item) == -1){
+			concise.push(item);
+		}
+	});
+
+	concise.sort(function (a, b) {
+		return a - b;
+	});
+
+	return concise;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // ========== elements and Nodes ==========
@@ -148,6 +192,64 @@ export function buildBookmarks(root_id, parent_element, tree){
 	}else{
         print(String.format("Without node {0}.", root_id), "Error");
 	}
+}
+
+export function buildTagBookmarks(ids, parent_element, tree){
+    // 清空 parent_element 所含子元素
+    parent_element.innerText = "";
+
+    let nodes = [], node, root_node = null;
+    nodes.push(tree);
+    let i = 0, len = nodes.length;
+    let nodes_in_tag = [];
+    
+    while(i < len){
+        node = nodes[i];
+
+        // 若 children 為空，會有 some 的適用問題
+        if(node.children == null){
+            // print(String.format("[bookmark] buildBookmarks node {0} without children.", node.id));
+		}else{
+            node.children.forEach(function(nod){
+                // nod.id 存在於 ids 當中
+                if(indexOfArray(ids, nod.id) != -1){
+                    nodes_in_tag.push(nod);
+			    }
+
+                nodes.push(nod);
+            });
+		}
+
+        i++;
+        len = nodes.length;
+    }
+
+    let text_class = document.createAttribute("class");
+    text_class.value = "text";
+
+    nodes_in_tag = conciseIntArray(nodes_in_tag);
+    nodes_in_tag.forEach(function(node){
+        let a = document.createElement("a");
+        let container = document.createElement("div");
+        let icon = document.createElement("div");
+        let title = document.createElement("span");
+        let expand = document.createElement("div");
+
+        // TODO: 按下 expand 後應在該欄下方展開該欄所包含的 tag
+
+        // TODO: 對個別元素進行定義
+        title.innerText = String.format("({0}) {1}", node.id, node.title);
+        title.setAttributeNode(text_class);
+        a.href = node.url;
+
+        // 將元素們載入容器中
+        container.appendChild(icon);
+        container.appendChild(title);
+        container.appendChild(expand);
+        a.appendChild(container);
+
+        parent_element.appendChild(a);
+    });
 }
 
 // TODO: sort nodes
