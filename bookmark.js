@@ -77,7 +77,7 @@ export function buildBookmarks(root_id, parent_element, tree){
         參考：https://jser.me/2014/04/02/%E5%A6%82%E4%BD%95%E5%9C%A8Array.forEach%E7%9A%84%E5%BE%AA%E7%8E%AF%E9%87%8Cbreak.html
         */
         else{
-            node.children.some(function(nod, index, arry){
+            node.children.some(function(nod, index, array){
                 if(nod.id == root_id){
                     root_node = nod;
                     return true;
@@ -159,61 +159,6 @@ function isFolder(node){
 	}else{
         return true;
 	}
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// ========== storage ==========
-// CRUD: C, U
-export function setTag(tag, id){
-    chrome.storage.sync.get(tag, function(dict) {
-        let array = dict[tag];
-
-        // 若為空則新建數據
-        if(array == null){
-            chrome.storage.sync.set({[tag]: [id]}, function() {
-		        print(String.format("Create tag: {0}, id: [{1}]", tag, id));
-	        });
-		}
-
-        // 若已有該 tag
-        else{
-            array.push(id);
-            chrome.storage.sync.set({[tag]: array}, function() {
-		        print(String.format("Update tag: {0}, id: [{1}]", tag, arrayToString(array)));
-	        });
-		}
-    });
-}
-
-// CRUD: R
-export function getTag(key){
-    chrome.storage.sync.get(key, function(dict) {
-        // 讀取全部
-        if(key == null){
-            Object.keys(dict).forEach(function(sub_key){
-                bm.print(sub_key, key);
-            });
-
-            return null;
-	    }else{
-
-            return dict[key];
-	    }    
-    });
-}
-
-// CRUD: D
-export function deleteTag(key){
-    chrome.storage.sync.remove(key, function() {
-		// pass
-	});
-
-    chrome.storage.sync.getBytesInUse(key, function(bytes_in_use){
-		if(bytes_in_use == 0){
-              bm.print(String.format("Key {0} has been removed successful.", key), "remove");
-		}
-	});
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

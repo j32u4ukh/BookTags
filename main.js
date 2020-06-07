@@ -9,40 +9,6 @@ let bm, utils;
 })();
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// TODO: [Depreciation] 改為使用多組函式，以 node 為參數，來協助存取
-function Node(id, name, url, parent_id){
-	this.id = id;
-	this.name = name
-	this.url = url;
-
-	// parent_id: 協助建立資料夾結構
-	this.parent_id = parent_id;
-
-	// TODO: children 父節點指向子節點
-
-	this.isFolder = function(){
-		if(this.url){
-			return true;
-		}else{
-			return false;
-		}
-	};
-
-	this.isLink = function(){
-		if(this.url){
-			return false;
-		}else{			
-			return true;
-		}
-	};
-
-	// 以字串形式表達這個 Node
-	this.toString = function(){
-		return String.format("({0} : {2}) {1}", this.id, this.name, this.parent_id);
-	};
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
 let branch = "root";
 
 // 之前所使用的變數
@@ -51,11 +17,16 @@ let tags = {}
 let node_dict = {};
 
 // 利用網址列作為 command line 來輸入測試指令
-let get = location.search;
+// let get = location.search;
 /*if(get != null){
 	//location.reload(true);
 	console.log(get);
 }*/
+
+document.addEventListener("onTagsReaded", function(event){
+	let ids = event.detail;
+	bm.print(String.format("onTagsReaded Listener, ids: {0}", bm.arrayToString(ids)));
+})
 
 document.addEventListener("DOMContentLoaded", function() {
 	// 建立右鍵事件
@@ -67,56 +38,95 @@ document.addEventListener("DOMContentLoaded", function() {
 	// 取得 BookmarkTreeNode
 	let bookmark_tree;
 
-	// 取得 BookmarkTreeNode
-	let e_branch = document.getElementById("branch");;
-
+	////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 處理 command line 給的指令
 	$("#command").change(function() {
 		// 取得 command line 的內容
-		command = $("#command").val();
+		let command = $("#command").val();
 		bm.print(command, "$");
 
 		// 清空 command line
-		e_branch.innerText = String.format("({0})", branch);
 		$("#command").val("");
 
 		// 根據長度不同、關鍵字不同，導向不同功能
-		let command_array = command.split(" -");
-		bm.print(String.format("length: {0}", command_array.length), "command_array");
+		let cmd = command.split(" ");
+		bm.print(String.format("length: {0}", cmd.length), "cmd");
 
-		switch(command_array.length){			
+		switch(cmd.length){
+			// 保留字 或 tag_name
 			case 1:
 				// TODO: 輸入 tag 名稱，篩選出含有該 tag 的書籤
 				// 將取得的內容轉為數字
-				let idx = parseInt(command, 10);
+				let idx = parseInt(cmd, 10);
 				bm.buildBookmarks(idx, bookmarks, bookmark_tree);
 				break;
+			// 2 參數 Tag 相關指令(tag_name, func_name)
 			case 2:
-				bm.print(String.format("command_array[0]: {0}", command_array[0]), "command_array");
-				if(command_array[0] == "sudo"){
-					let array1 = command_array[1].split(" ");
-					let kind = array1[0];
-					let content = array1[1];
+				// tag_name 不能是保留字(keyword)
+				if(isKeyWord(cmd[0])){
+					bm.print(String.format("This is keyword: {0}", cmd[0]));
 
-					bm.print(String.format("kind: {0}", kind), "command_array");
-					bm.print(String.format("content: {0}", content), "command_array");
-
-					switch(kind){
-						case "checkout":
-							branch = content;
-							// 切換分支
-							e_branch.innerText = String.format("({0})", branch);
-							$("#command").val("");
+				}else{
+					bm.print(String.format("This is not keyword: {0}", cmd[0]));
+					// TODO: func_name: get(g)  delete(d)
+					// tag_name
+					switch(cmd[1]){
+						case "get":
+						case "g":
+							getTag(cmd[0]);
+							break;
+						case "delete":
+						case "d":
+							deleteTag(cmd[0]);
 							break;
 						default:
 							break;
 					}
 				}
+				break;
+			// 3 參數 Tag 相關指令(tag_name, func_name, ids)
+			case 3:
+				// tag_name 不能是保留字(keyword)
+				let tag_name = cmd[0];
+				
+				if(isKeyWord(tag_name)){
+					bm.print(String.format("This is keyword: {0}", tag_name));
+
+				}else{
+					let func_name = cmd[1];
+					let ids = cmd[2].split(",");
+					switch(func_name){
+						case "set":
+						case "s":
+							if(ids.length == 1){
+								setTag(tag_name, ids);
+
+							}else{
+								setTags(tag_name, ids);
+
+							}
+							break;
+						case "delete":
+						case "d":
+							if(ids.length == 1){
+								deleteTagElement(tag_name, ids);
+
+							}else{
+								deleteTagElements(tag_name, ids);
+
+							}
+							break;
+						default:
+							break;
+					}
+				}
+				break;
 			default:
 				break;
 		}		
 	});
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 取得儲存書籤的物件(形式為一種樹):  bookmarks.BookmarkTreeNode 
 	// 參考網站: https://developer.chrome.com/extensions/bookmarks
 	chrome.bookmarks.getTree(function(bookmark_tree_array) {
@@ -208,7 +218,7 @@ document.addEventListener("DOMContentLoaded", function() {
 		let ul = document.createElement("ul");
 		Object.keys(node_dict).forEach(function(key){
 			let node = node_dict[key];
-			// bm.print(String.format("{0} : {1}", node.id, node.parent_id), "ID");
+			// print(String.format("{0} : {1}", node.id, node.parent_id), "ID");
 			if(node.parent_id == 1){
 				let li = document.createElement("li");
 				let span = document.createElement("span");
@@ -225,6 +235,176 @@ document.addEventListener("DOMContentLoaded", function() {
 		bookmarks.appendChild(ul);*/
 	});
 });
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// ========== utils ==========
+function isKeyWord(target){
+	let key_words = ["set", "s", "get", "g", "delete", "d"];
+	let is_key_word = false;
+
+	key_words.some(function(key_word, index, array){
+		if(target == key_word){
+			is_key_word = true;
+		}
+	});
+
+	return is_key_word;
+}
+
+function indexOfArray(array, element){
+	let idx = -1;
+
+	array.some(function(arr, index, list){
+		if(arr == element){
+			idx = index;
+		}
+	});
+
+	return idx;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// ========== storage ==========
+// CRUD: C, U
+function setTag(tag, id){
+    chrome.storage.sync.get(tag, function(dict) {
+        let array = dict[tag];
+
+        // 若為空則新建數據
+        if(array == null){
+            chrome.storage.sync.set({[tag]: [id]}, function() {
+		        bm.print(String.format("Create tag: {0}, id: [{1}]", tag, id));
+	        });
+		}
+
+        // 若已有該 tag
+        else{
+            array.push(id);
+            chrome.storage.sync.set({[tag]: array}, function() {
+		        bm.print(String.format("Update tag: {0}, id: {1}", tag, bm.arrayToString(array)));
+	        });
+		}
+    });
+}
+
+// CRUD: C, U
+function setTags(tag, ids){
+    chrome.storage.sync.get(tag, function(dict) {
+        let array = dict[tag];
+
+        // 若為空則新建數據
+        if(array == null){
+            chrome.storage.sync.set({[tag]: ids}, function() {
+		        bm.print(String.format("Create tag: {0}, ids: [{1}]", tag, ids));
+	        });
+		}
+
+        // 若已有該 tag
+        else{
+            ids.forEach(function(id){
+                array.push(id);
+            });
+            
+            chrome.storage.sync.set({[tag]: array}, function() {
+		        bm.print(String.format("Update tag: {0}, id: {1}", tag, bm.arrayToString(array)));
+	        });
+		}
+    });
+}
+
+// CRUD: R
+function getTag(tag){	
+    chrome.storage.sync.get(tag, function(dict) {
+        // 讀取全部
+        if(tag == null){
+            Object.keys(dict).forEach(function(sub_tag){
+                bm.print(sub_tag, tag);
+            });
+	    }else{
+			// 若 dict 有 tag 這個關鍵字
+			if(dict.hasOwnProperty(tag)){
+				bm.print(String.format("getTag ids: {0}", dict[tag]));
+				var onTagsReaded = new CustomEvent("onTagsReaded", {"detail": dict[tag]});
+				document.dispatchEvent(onTagsReaded);
+			}
+	    }    
+    });
+}
+
+// CRUD: D
+function deleteTag(tag){	
+    chrome.storage.sync.remove(tag, function() {
+		// pass
+	});
+
+    chrome.storage.sync.getBytesInUse(tag, function(bytes_in_use){
+		if(bytes_in_use == 0){
+              bm.print(String.format("Tag {0} has been removed successful.", tag), "remove");
+		}
+	});
+}
+
+// CRUD: D
+function deleteTagElement(tag, id){
+    chrome.storage.sync.get(tag, function(dict) {
+		// 若 dict 有 tag 這個關鍵字
+		if(dict.hasOwnProperty(tag)){
+			let array = dict[tag];
+
+			array.forEach(function(arr){
+				bm.print(String.format("arr: {0}, id: {1}, arr == id: {2}", arr, id, arr === id));
+			});
+
+			// 取得該 id 在陣列中的索引值
+			let index = indexOfArray(array, id);
+			bm.print(String.format("deleteTagElement | index: {0}", index));
+
+			// 若索引值在正常區間內
+			if(index > -1){
+				// 移除該索引值所指向的內容
+				bm.print(String.format("Delete id {0} @ {1}", id, index));
+				array.splice(index, 1);
+			}
+
+			// 將新的 array 再次存入 tag 當中
+			chrome.storage.sync.set({[tag]: array}, function() {
+		        bm.print(String.format("Update tag: {0}, id: {1}", tag, bm.arrayToString(array)));
+	        });
+		}   
+    });
+}
+
+// CRUD: D
+function deleteTagElements(tag, ids){
+    chrome.storage.sync.get(tag, function(dict) {
+		// 若 dict 有 tag 這個關鍵字
+		if(dict.hasOwnProperty(tag)){
+			// 取得目前 tag 下的 id 們
+			let array = dict[tag];
+
+			ids.forEach(function(id){
+				// 取得該 id 在陣列中的索引值
+				let index = indexOfArray(array, id);
+				bm.print(String.format("deleteTagElements | index: {0}", index));
+
+				// 若索引值在正常區間內
+				if(index > -1){
+					// 移除該索引值所指向的內容
+					array.splice(index, 1);
+				}
+			});
+
+			// 將新的 array 再次存入 tag 當中
+			chrome.storage.sync.set({[tag]: array}, function() {
+		        bm.print(String.format("Update tag: {0}, id: {1}", tag, bm.arrayToString(array)));
+	        });
+		}   
+    });
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -256,38 +436,52 @@ function storageTest(){
 }
 
 function storageTest2(){
-	let key = "number";
-	chrome.storage.sync.get(key, function(items) {
-		if(items[key] == null){
-			bm.print("items["+ key +"] == null");
+	let tag = "number";
+	chrome.storage.sync.get(tag, function(items) {
+		if(items[tag] == null){
+			bm.print("items["+ tag +"] == null");
 		}else{
-			bm.print("chrome.storage.sync.get:" + items[key], "sync.get");
+			bm.print("chrome.storage.sync.get:" + items[tag], "sync.get");
 		}
 	});
 
-	chrome.storage.sync.set({[key]: [9388]}, function() {
+	chrome.storage.sync.set({[tag]: [9388]}, function() {
 		bm.print("chrome.storage.sync.set", "sync.set");
 	});
 
-	chrome.storage.sync.set({[key]: [123, 456]}, function() {
+	chrome.storage.sync.set({[tag]: [123, 456]}, function() {
 		bm.print("chrome.storage.sync.set", "sync.set");
 	});
 
-	chrome.storage.sync.get(key, function(items) {
-		if(items[key] == null){
-			bm.print("items["+ key +"] == null");
+	chrome.storage.sync.get(tag, function(items) {
+		if(items[tag] == null){
+			bm.print("items["+ tag +"] == null");
 		}else{
-			bm.printArray(items[key], "sync.get");
-			// bm.print("chrome.storage.sync.get:" + );
+			bm.printArray(items[tag], "sync.get");
+			// print("chrome.storage.sync.get:" + );
 		}
 	});
 
-	key = "number";
-	chrome.storage.sync.remove(key, function() {
+	tag = "number";
+	chrome.storage.sync.remove(tag, function() {
 		bm.print("chrome.storage.sync.remove", "remove");
 	});
 
 	chrome.storage.sync.getBytesInUse(null, function(bytes_in_use){
 		bm.print(bytes_in_use, "bytes_in_use");
 	});
+}
+
+function callEventTest(){
+	var onEventTest = new CustomEvent("onEventTest", {"detail": "Message from CustomEvent."});
+	document.dispatchEvent(onEventTest);
+}
+
+function addEventListenerTest(){
+	document.addEventListener("onEventTest", function(event){
+		let info = event.detail;
+		bm.print(String.format("onTagsReaded Listener: {0}", info));
+	});
+
+	callEventTest();
 }
