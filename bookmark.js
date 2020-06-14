@@ -66,6 +66,16 @@ export function conciseIntArray(array){
 	return concise;
 }
 
+// 嘗試對取出的 nodes 做前處理，之後要做資料夾結構應該也要靠這裡
+export function preprocessOfNodes(nodes){
+    // 簡單根據 id 作為排序依據
+	nodes.sort(function (node1, node2) {
+		return node1.id - node2.id;
+	});
+
+	return nodes;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // ========== elements and Nodes ==========
@@ -199,17 +209,18 @@ export function buildTagBookmarks(ids, parent_element, tree){
     parent_element.innerText = "";
 
     let nodes = [], node, root_node = null;
+
+    // 將樹本身加入
     nodes.push(tree);
+
     let i = 0, len = nodes.length;
     let nodes_in_tag = [];
     
+    // 將 tag 下的所有 id 所對應的 node 加入 nodes_in_tag
     while(i < len){
         node = nodes[i];
 
-        // 若 children 為空，會有 some 的適用問題
-        if(node.children == null){
-            // print(String.format("[bookmark] buildBookmarks node {0} without children.", node.id));
-		}else{
+        if(node.children != null){
             node.children.forEach(function(nod){
                 // nod.id 存在於 ids 當中
                 if(indexOfArray(ids, nod.id) != -1){
@@ -224,27 +235,32 @@ export function buildTagBookmarks(ids, parent_element, tree){
         len = nodes.length;
     }
 
+    // ===== nodes_in_tag =====
+
     let text_class = document.createAttribute("class");
     text_class.value = "text";
 
-    nodes_in_tag = conciseIntArray(nodes_in_tag);
+    // 簡單根據 id 作為排序依據
+    nodes_in_tag = preprocessOfNodes(nodes_in_tag);
+
+    let title = document.createElement("span");
+    title.setAttributeNode(text_class);
     nodes_in_tag.forEach(function(node){
         let a = document.createElement("a");
         let container = document.createElement("div");
         let icon = document.createElement("div");
-        let title = document.createElement("span");
+        let temp_title = title.cloneNode(true);
         let expand = document.createElement("div");
 
         // TODO: 按下 expand 後應在該欄下方展開該欄所包含的 tag
 
         // TODO: 對個別元素進行定義
-        title.innerText = String.format("({0}) {1}", node.id, node.title);
-        title.setAttributeNode(text_class);
+        temp_title.innerText = String.format("({0}) {1}", node.id, node.title);
         a.href = node.url;
 
         // 將元素們載入容器中
         container.appendChild(icon);
-        container.appendChild(title);
+        container.appendChild(temp_title);
         container.appendChild(expand);
         a.appendChild(container);
 

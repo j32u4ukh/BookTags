@@ -9,12 +9,18 @@ let bm, utils;
 })();
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-let branch = "root";
+// index.html 當中的 bookmarks 元素
+let bookmarks;
+
+// 取得 BookmarkTreeNode
+let bookmark_tree;
+
 
 // 之前所使用的變數
 let nodes = [];
 let tags = {}
 let node_dict = {};
+let branch = "root";
 
 // 利用網址列作為 command line 來輸入測試指令
 // let get = location.search;
@@ -33,10 +39,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	bm.createMenus();
 
 	// 取得 index.html 當中的 bookmarks 元素
-	let bookmarks = document.getElementById("bookmarks");
-
-	// 取得 BookmarkTreeNode
-	let bookmark_tree;
+	bookmarks = document.getElementById("bookmarks");
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 處理 command line 給的指令
@@ -54,19 +57,30 @@ document.addEventListener("DOMContentLoaded", function() {
 
 		switch(cmd.length){
 			// 保留字 或 tag_name
-			case 1:				
-				// 將取得的內容轉為數字
-				//let idx = parseInt(cmd, 10);
-				//bm.buildBookmarks(idx, bookmarks, bookmark_tree);
+			case 1:	
+				// 判斷所輸入的內容是否為數字
+				if(parseInt(cmd, 10).toString() == "NaN"){
+					if(isKeyWord(cmd)){
+						bm.print(String.format("This is keyword: {0}", cmd[0]));
 
-				// TODO: 輸入 tag 名稱，篩選出含有該 tag 的書籤
-				// tag_name 不能是保留字(keyword)
-				if(isKeyWord(cmd[0])){
-					bm.print(String.format("This is keyword: {0}", cmd[0]));
+						switch(cmd){
+							case "get":
+							case "g":
+								getTag(null);
+								break;
+							default:
+								break;
+						}
 
+					}else{
+						showTag(cmd, bookmarks, bookmark_tree);
+					}
 				}else{
-					showTag(cmd[0], bookmarks, bookmark_tree);
-				}
+					// 根據索引值作為上層節點的 ID，呈現書籤
+					// 將取得的內容轉為數字
+					let idx = parseInt(cmd, 10);
+					bm.buildBookmarks(idx, bookmarks, bookmark_tree);
+				}				
 				break;
 			// 2 參數 Tag 相關指令(tag_name, func_name)
 			case 2:
@@ -76,7 +90,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 				}else{
 					bm.print(String.format("This is not keyword: {0}", cmd[0]));
-					// TODO: func_name: get(g)  delete(d)
+					// func_name: get(g)  delete(d)
 					// tag_name
 					switch(cmd[1]){
 						case "get":
@@ -86,6 +100,10 @@ document.addEventListener("DOMContentLoaded", function() {
 						case "delete":
 						case "d":
 							deleteTag(cmd[0]);
+							break;
+						case "all":
+						case "a":
+							getTag(null);
 							break;
 						default:
 							break;
@@ -106,6 +124,8 @@ document.addEventListener("DOMContentLoaded", function() {
 					switch(func_name){
 						case "set":
 						case "s":
+							// TODO: 若對資料夾添加 tag，則資料夾內的書籤全部添加該 tag，但資料夾本身無法設置 tag
+							// 資料夾本身無法設置 tag 是為了避免之後根據 tag 相對關係所產生的資料夾結構會產生衝突
 							if(ids.length == 1){
 								setTag(tag_name, ids);
 
@@ -146,6 +166,7 @@ document.addEventListener("DOMContentLoaded", function() {
 		bm.buildBookmarks(1, bookmarks, bookmark_tree);
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		getTag(null);
 		
 		/*
 		// 遍歷全部書籤
@@ -337,12 +358,13 @@ function getTag(tag){
         // 讀取全部
         if(tag == null){
             Object.keys(dict).forEach(function(sub_tag){
-                bm.print(sub_tag, tag);
+                bm.print(sub_tag, "tag");
             });
 	    }else{
 			// 若 dict 有 tag 這個關鍵字
 			if(dict.hasOwnProperty(tag)){
 				bm.print(String.format("getTag ids: {0}", dict[tag]));
+				// 利用 CustomEvent 將 tag 下的 id 傳出去
 				var onTagsReaded = new CustomEvent("onTagsReaded", {"detail": dict[tag]});
 				document.dispatchEvent(onTagsReaded);
 			}
@@ -352,24 +374,15 @@ function getTag(tag){
 
 // CRUD: R
 function showTag(tag, bookmarks, bookmark_tree){
-	// TODO: 將 tag 下的所有 node 取出，以 id 來排序
     chrome.storage.sync.get(tag, function(dict) {
         // 若 dict 有 tag 這個關鍵字
 		if(dict.hasOwnProperty(tag)){
 			let ids = dict[tag];
 
 			bm.buildTagBookmarks(ids, bookmarks, bookmark_tree);
-
-			/*bookmark_tree.children.forEach(function(node) {
-				// 非空節點才加入
-				if(node.children.length > 0){
-
-					// 添加到 nodes 當中
-					bm.print(String.format("node id: {0}, parent_id: {1}", node.id, node.parentId));
-					nodes.push(node);
-				}
-			});*/
-		}    
+		}else{
+			alert("沒有該 tag");
+		}  
     });
 }
 
